@@ -1,3 +1,8 @@
+# To generate the boilerplate code
+npm init -y
+npm install yo generator-code --save-dev
+npx yo code
+
 # uispyidentifier README
 
 This is the README for your extension "uispyidentifier". After writing up a brief description, we recommend including the following sections.
