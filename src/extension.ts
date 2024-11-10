@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-
+import * as path from "path";
 export function activate(context: vscode.ExtensionContext) {
   console.log(
     'Congratulations, your extension "uispyidentifier" is now active!'
@@ -60,7 +60,60 @@ export function activate(context: vscode.ExtensionContext) {
     return null;
   }
 
-  function runActions(mode: boolean = false) {
+  // //   without file name
+  //   function runActions(mode: boolean = false) {
+  //     if (lineIdentifer) {
+  //       const editor = vscode.window.activeTextEditor;
+  //       if (!editor) {
+  //         vscode.window.showInformationMessage("No active editor found");
+  //         return;
+  //       }
+  //       const document = editor.document;
+  //       const text = document.getText();
+  //       const htmlRegex = /<(\w+)(\s[^>]*?)?(\/?)>/g;
+  //       let edits: vscode.TextEdit[] = [];
+
+  //       let match: RegExpExecArray | null;
+  //       while ((match = htmlRegex.exec(text))) {
+  //         const tagIndex = match.index;
+  //         const line = document.positionAt(tagIndex).line + 1;
+  //         // const attribute = ` ${lineIdentifer}="${line}"`;
+  //         const attribute = ` ${lineIdentifer}="${line} Path=${getActiveFileName("base")}"`;
+
+  //         const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and space
+  //         const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
+  //         if (mode === false) {
+  //           // here revert actions will be implemented i.e remove the lineidentifier
+  //           const tagText = match[0];
+  //           // Regex to remove the added lineidentifier
+  //           const updatedTagText = tagText.replace(
+  //             new RegExp(` ${lineIdentifer}="\\d+"`),
+  //             ""
+  //           );
+  //           // Replace the entire tag with the updated one
+  //           const range = new vscode.Range(
+  //             document.positionAt(match.index),
+  //             document.positionAt(match.index + tagText.length)
+  //           );
+  //           edits.push(vscode.TextEdit.replace(range, updatedTagText));
+  //         } else {
+  //           // If "add mode", add the dynamic attribute
+  //           edits.push(vscode.TextEdit.insert(insertPosition, attribute));
+  //         }
+  //       }
+  //       // Apply the text edits to the document
+  //       editor.edit((editBuilder) => {
+  //         edits.forEach((edit) => {
+  //           editBuilder.replace(edit.range, edit.newText);
+  //         });
+  //       });
+  //     }
+  //     return runCount;
+  //   }
+
+  function runActions() {
+    console.log("run actions fn called");
+
     if (lineIdentifer) {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
@@ -76,28 +129,17 @@ export function activate(context: vscode.ExtensionContext) {
       while ((match = htmlRegex.exec(text))) {
         const tagIndex = match.index;
         const line = document.positionAt(tagIndex).line + 1;
-        const attribute = ` ${lineIdentifer}="${line}"`;
-        const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and space
+        // Add the attribute with line identifier and file path
+        const attribute = ` ${lineIdentifer}="${line} Path=${getActiveFileName(
+          "base"
+        )}"`;
+        const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and a space
         const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
-        if (mode === false) {
-          // here revert actions will be implemented i.e remove the lineidentifier
-          const tagText = match[0];
-          // Regex to remove the added lineidentifier
-          const updatedTagText = tagText.replace(
-            new RegExp(` ${lineIdentifer}="\\d+"`),
-            ""
-          );
-          // Replace the entire tag with the updated one
-          const range = new vscode.Range(
-            document.positionAt(match.index),
-            document.positionAt(match.index + tagText.length)
-          );
-          edits.push(vscode.TextEdit.replace(range, updatedTagText));
-        } else {
-          // If "add mode", add the dynamic attribute
-          edits.push(vscode.TextEdit.insert(insertPosition, attribute));
-        }
+
+        // "Add mode" logic to add the attribute
+        edits.push(vscode.TextEdit.insert(insertPosition, attribute));
       }
+
       // Apply the text edits to the document
       editor.edit((editBuilder) => {
         edits.forEach((edit) => {
@@ -105,7 +147,71 @@ export function activate(context: vscode.ExtensionContext) {
         });
       });
     }
-    return runCount;
+    console.log("run actions fn compleeted");
+  }
+
+  function revertActions() {
+    console.log("revert actions fn called");
+    if (lineIdentifer) {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showInformationMessage("No active editor found");
+        return;
+      }
+      const document = editor.document;
+      const text = document.getText();
+      const htmlRegex = /<(\w+)(\s[^>]*?)?(\/?)>/g;
+      let edits: vscode.TextEdit[] = [];
+
+      let match: RegExpExecArray | null;
+      while ((match = htmlRegex.exec(text))) {
+        const tagIndex = match.index;
+        const line = document.positionAt(tagIndex).line + 1;
+        // Add the attribute with line identifier and file path
+        const attribute = ` ${lineIdentifer}="${line} Path=${getActiveFileName(
+          "base"
+        )}"`;
+        const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and a space
+        const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
+
+        // "Revert mode" logic to remove the attribute
+        const tagText = match[0];
+        // Updated regex to handle lineIdentifer with additional characters or text
+        const updatedTagText = tagText.replace(
+          new RegExp(`\\s${lineIdentifer}=".*?"`, "g"),
+          "" // This will remove the attribute and its value
+        );
+
+        // Replace the entire tag with the updated one
+        const range = new vscode.Range(
+          document.positionAt(match.index),
+          document.positionAt(match.index + tagText.length)
+        );
+        edits.push(vscode.TextEdit.replace(range, updatedTagText));
+      }
+
+      // Apply the text edits to the document
+      editor.edit((editBuilder) => {
+        edits.forEach((edit) => {
+          editBuilder.replace(edit.range, edit.newText);
+        });
+      });
+    }
+    console.log("revert actions fn call comp;ete");
+  }
+
+  function getActiveFileName(type = "relative"): string {
+    // get the active editor
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+      const document = editor.document;
+
+      const fullFileName = document.fileName;
+
+      return type === "relative" ? fullFileName : path.basename(fullFileName); // Use path.basename to extract the file name only (without the path)
+    } else {
+      return "";
+    }
   }
 
   const disposable = vscode.commands.registerCommand(
@@ -155,7 +261,8 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(
                   "Running extension actions..."
                 );
-                runActions(true);
+                // revertActions();
+                runActions();
                 // Add your logic for extension actions here
                 break;
 
@@ -163,7 +270,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(
                   "Reverting extension actions..."
                 );
-                runActions(false);
+                revertActions();
                 // Add your logic for reverting actions here
                 break;
 
