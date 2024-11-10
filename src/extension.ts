@@ -26,73 +26,91 @@ export function activate(context: vscode.ExtensionContext) {
 
   statusBarButton.backgroundColor = new vscode.ThemeColor("statusBarItem.");
 
+  // constatnts
+  let lineIdentifer: string =
+    context.globalState.get<string>("lineIdentifer") || "Line_Identifier";
+
+  const storedLisenceKey = context.globalState.get<string>("lisenceKey");
+
+  // functions
+  function validatingUser(lisenceKey: string): string | null {
+    if (lisenceKey === "valid-key") {
+      context.globalState.update("lisenceKey", lisenceKey);
+      console.log("User validated");
+      return null; // Return null to indicate that the input is valid
+    } else {
+      console.log("Invalid license key");
+      return "License Key is not valid"; // Return error message if invalid
+    }
+  }
+
+  function handleCustomIdentifier(newIdentifier: string): string | null {
+    lineIdentifer = newIdentifier;
+    console.table({ lineIdentifer });
+    context.globalState.update("lineIdentifer", lineIdentifer);
+    vscode.window.showInformationMessage(
+      `Identifier changed to ${lineIdentifer}`
+    );
+
+    // Return null to indicate valid input
+    // Or return a string message for invalid input (example validation check)
+    if (newIdentifier.trim() === "") {
+      return "Identifier cannot be empty";
+    }
+    return null;
+  }
+
+  function runActions(mode: boolean = false) {
+    if (lineIdentifer) {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showInformationMessage("No active editor found");
+        return;
+      }
+      const document = editor.document;
+      const text = document.getText();
+      const htmlRegex = /<(\w+)(\s[^>]*?)?(\/?)>/g;
+      let edits: vscode.TextEdit[] = [];
+
+      let match: RegExpExecArray | null;
+      while ((match = htmlRegex.exec(text))) {
+        const tagIndex = match.index;
+        const line = document.positionAt(tagIndex).line + 1;
+        const attribute = ` ${lineIdentifer}="${line}"`;
+        const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and space
+        const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
+        if (mode === false) {
+          // here revert actions will be implemented i.e remove the lineidentifier
+          const tagText = match[0];
+          // Regex to remove the added lineidentifier
+          const updatedTagText = tagText.replace(
+            new RegExp(` ${lineIdentifer}="\\d+"`),
+            ""
+          );
+          // Replace the entire tag with the updated one
+          const range = new vscode.Range(
+            document.positionAt(match.index),
+            document.positionAt(match.index + tagText.length)
+          );
+          edits.push(vscode.TextEdit.replace(range, updatedTagText));
+        } else {
+          // If "add mode", add the dynamic attribute
+          edits.push(vscode.TextEdit.insert(insertPosition, attribute));
+        }
+      }
+      // Apply the text edits to the document
+      editor.edit((editBuilder) => {
+        edits.forEach((edit) => {
+          editBuilder.replace(edit.range, edit.newText);
+        });
+      });
+    }
+    return runCount;
+  }
+
   const disposable = vscode.commands.registerCommand(
     "uispyidentifier.addDynamicAttributes",
     async () => {
-      // constatnts
-      let lineIdentifer: string = "Line_Identifier";
-
-      // functions
-      // Validation function
-      function validatingUser(lisenceKey: string): string | null {
-        if (lisenceKey === "valid-key") {
-          context.globalState.update("lisenceKey", lisenceKey);
-          console.log("User validated");
-          return null; // Return null to indicate that the input is valid
-        } else {
-          console.log("Invalid license key");
-          return "License Key is not valid"; // Return error message if invalid
-        }
-      }
-      function handleCustomIdentifier(newIdentifier: string) {
-        lineIdentifer = newIdentifier;
-        context.globalState.update("lineIdentifer", lineIdentifer);
-        return vscode.window.showInformationMessage(
-          `Identifier changed to ${lineIdentifer}`
-        );
-      }
-
-      function runActions(mode: boolean = false) {
-        if (lineIdentifer) {
-			console.log("runaction called", mode);
-          const editor = vscode.window.activeTextEditor;
-          if (!editor) {
-			console.log("line 60");
-            vscode.window.showInformationMessage("No active editor found");
-            return;
-          }
-          const document = editor.document;
-          const text = document.getText();
-          const htmlRegex = /<(\w+)(\s[^>]*?)?(\/?)>/g;
-          let edits: vscode.TextEdit[] = [];
-
-          let match: RegExpExecArray | null;
-          while ((match = htmlRegex.exec(text))) {
-            const tagIndex = match.index;
-            const line = document.positionAt(tagIndex).line + 1;
-            const attribute = ` ${lineIdentifer}="${line}"`;
-            console.log("line 73");
-			const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and space
-            const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
-            if (mode === false) {
-            } else {
-				console.log("else block line 77");
-              // edits.push(vscode.TextEdit.insert(inse))
-              // If "add mode", add the dynamic attribute
-              edits.push(vscode.TextEdit.insert(insertPosition, attribute));
-            }
-          }
-		   // Apply the text edits to the document
-		   editor.edit((editBuilder) => {
-			edits.forEach((edit) => {
-			  editBuilder.replace(edit.range, edit.newText);
-			});
-		  });
-        }
-        return runCount;
-      }
-      const storedLisenceKey = context.globalState.get<string>("lisenceKey");
-
       if (storedLisenceKey) {
         const options = [
           "Open website",
@@ -137,7 +155,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(
                   "Running extension actions..."
                 );
-				runActions(true);
+                runActions(true);
                 // Add your logic for extension actions here
                 break;
 
@@ -145,6 +163,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(
                   "Reverting extension actions..."
                 );
+                runActions(false);
                 // Add your logic for reverting actions here
                 break;
 
@@ -197,6 +216,7 @@ export function activate(context: vscode.ExtensionContext) {
                   placeHolder: `Please provide your new line identifier this will replace the default identifer(${lineIdentifer})`,
                   prompt: "Enter The New Line Identifier Key",
                   validateInput: (value: string) => {
+                    console.log("value in change line identifier : ", value);
                     return handleCustomIdentifier(value);
                   },
                   password: false, // If true, masks the input as a password
