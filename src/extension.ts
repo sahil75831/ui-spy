@@ -7,11 +7,14 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   // Get runCount from globalState
-  let runCount = context.globalState.get<number>("runCount", 0); // Default to 0 if not found
+  let runCount = context.globalState.get<number>("runCount", 0);
   let lineIdentifier = context.globalState.get<string>(
-    "lineIdentifer",
-    "Line_Identifier"
+    "lineIdentifier",
+    "LineNumber"
   );
+  if (lineIdentifier.trim() === "") {
+    lineIdentifier = "LineNumber";
+  }
   // create a ststau bar button
   const statusBarButton = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
@@ -28,8 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
   statusBarButton.backgroundColor = new vscode.ThemeColor("statusBarItem.");
 
   // constatnts
-  let lineIdentifer: string =
-    context.globalState.get<string>("lineIdentifer") || "Line_Identifier";
+  // let lineIdentifier: string =    context.globalState.get<string>("lineIdentifier") || "Line_Identifier";
 
   const storedLisenceKey = context.globalState.get<string>("lisenceKey");
   let isInitialLoad = true; // Ensures this is defined globally
@@ -92,84 +94,39 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   function handleCustomIdentifier(newIdentifier: string): string | null {
-    lineIdentifer = newIdentifier;
-    console.table({ lineIdentifer });
-    context.globalState.update("lineIdentifer", lineIdentifer);
+    lineIdentifier = newIdentifier;
+    if (lineIdentifier.trim() === "") {
+      lineIdentifier = "LineNumber";
+    }
+    console.table({ lineIdentifier });
+    context.globalState.update("lineIdentifier", lineIdentifier);
     vscode.window.showInformationMessage(
-      `Identifier changed to ${lineIdentifer}`
+      `Identifier changed to ${lineIdentifier}`
     );
 
     // Return null to indicate valid input
     // Or return a string message for invalid input (example validation check)
-    if (newIdentifier.trim() === "") {
+    if (lineIdentifier.trim() === "") {
       return "Identifier cannot be empty";
     }
     return null;
   }
 
-  // //   without file name
-  //   function runActions(mode: boolean = false) {
-  //     if (lineIdentifer) {
-  //       const editor = vscode.window.activeTextEditor;
-  //       if (!editor) {
-  //         vscode.window.showInformationMessage("No active editor found");
-  //         return;
-  //       }
-  //       const document = editor.document;
-  //       const text = document.getText();
-  //       const htmlRegex = /<(\w+)(\s[^>]*?)?(\/?)>/g;
-  //       let edits: vscode.TextEdit[] = [];
-
-  //       let match: RegExpExecArray | null;
-  //       while ((match = htmlRegex.exec(text))) {
-  //         const tagIndex = match.index;
-  //         const line = document.positionAt(tagIndex).line + 1;
-  //         // const attribute = ` ${lineIdentifer}="${line}"`;
-  //         const attribute = ` ${lineIdentifer}="${line} Path=${getActiveFileName("base")}"`;
-
-  //         const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and space
-  //         const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
-  //         if (mode === false) {
-  //           // here revert actions will be implemented i.e remove the lineidentifier
-  //           const tagText = match[0];
-  //           // Regex to remove the added lineidentifier
-  //           const updatedTagText = tagText.replace(
-  //             new RegExp(` ${lineIdentifer}="\\d+"`),
-  //             ""
-  //           );
-  //           // Replace the entire tag with the updated one
-  //           const range = new vscode.Range(
-  //             document.positionAt(match.index),
-  //             document.positionAt(match.index + tagText.length)
-  //           );
-  //           edits.push(vscode.TextEdit.replace(range, updatedTagText));
-  //         } else {
-  //           // If "add mode", add the dynamic attribute
-  //           edits.push(vscode.TextEdit.insert(insertPosition, attribute));
-  //         }
-  //       }
-  //       // Apply the text edits to the document
-  //       editor.edit((editBuilder) => {
-  //         edits.forEach((edit) => {
-  //           editBuilder.replace(edit.range, edit.newText);
-  //         });
-  //       });
-  //     }
-  //     return runCount;
-  //   }
-
   async function runActionsForAllFilesInSrc() {
-    function saveActiveFileEditor(document: vscode.TextDocument) {
-      const activeEditor = document;
-
-      if (activeEditor) {
-        // Save the active text document
-        activeEditor.save().then(
-          () => console.log("File saved successfully on focus loss"),
-          (err) => console.error("Failed to save file:", err)
-        );
-      } else {
-        console.log("No active editor to save");
+    let lineIdentifier = context.globalState.get<string>(
+      "lineIdentifier",
+      "Line_Identifier"
+    );
+    if (lineIdentifier.trim() === "") {
+      lineIdentifier = "LineNumber";
+    }
+    await revertActionsForAllFilesInSrc();
+    async function saveActiveFileEditor(document: vscode.TextDocument) {
+      try {
+        await document.save();
+        console.log("File saved successfully.");
+      } catch (err) {
+        console.error("Failed to save file:", err);
       }
     }
 
@@ -182,9 +139,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Construct the absolute path to the `src` directory within the workspace
     const srcDir = path.join(workspaceFolder.uri.fsPath, "src");
-
-    // Ensure the directory exists before proceeding
     const srcUri = vscode.Uri.file(srcDir);
+
+    // Ensure the directory exists
     try {
       const srcStat = await vscode.workspace.fs.stat(srcUri);
       if (srcStat.type !== vscode.FileType.Directory) {
@@ -208,28 +165,19 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    // Get the filename of the previous opened file
     const visibleEditors = vscode.window.visibleTextEditors;
     let prevEditor =
       visibleEditors.length > 1
         ? visibleEditors[visibleEditors.length - 2]
         : null;
+    let prevFileName = prevEditor ? prevEditor.document.fileName : "";
 
-    let prevFileName = "";
-    if (prevEditor) {
-      prevFileName = prevEditor.document.fileName;
-      console.log("Previously opened file: ", prevFileName);
-    }
-
-    // Loop through each file and apply your function
+    // Loop through each file and apply changes
     for (const file of files) {
       const document = await vscode.workspace.openTextDocument(file);
       const text = document.getText();
-
-      // Updated regex for lowercase HTML tags
       const htmlRegex =
         /<([a-z][\w\-]*)((?:\s+[\w\-]+(?:="[^"]*")?)*)\s*(\/?)>/g;
-
       let edits: vscode.TextEdit[] = [];
       let match: RegExpExecArray | null;
 
@@ -237,38 +185,42 @@ export function activate(context: vscode.ExtensionContext) {
         const tagIndex = match.index;
         const line = document.positionAt(tagIndex).line + 1;
 
-        // Generate attribute using the previous opened file name
-        const attribute = ` ${lineIdentifer}="${line} Path=${
-          path.basename(prevFileName) || path.basename(document.fileName)
-        }"`;
-
-        const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and a space
-        const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
-
+        const attribute = ` ${lineIdentifier}="${line} Filepath=${path.basename(
+          document.fileName
+        )}"`;
+        const insertPositionIndex = tagIndex + match[1].length + 1;
+        const insertPosition = document.positionAt(insertPositionIndex);
         edits.push(vscode.TextEdit.insert(insertPosition, attribute));
       }
 
-      // Open and apply changes to the document
+      // Apply changes to the document
       const editor = await vscode.window.showTextDocument(document, {
         preview: false,
       });
-      editor.edit((editBuilder) => {
+      const success = await editor.edit((editBuilder) => {
         edits.forEach((edit) => {
           editBuilder.insert(edit.range.start, edit.newText);
         });
       });
 
-      runCount += 1;
-      context.globalState.update("runCount", runCount);
-
-      // Save the editor
-      saveActiveFileEditor(document);
+      if (success) {
+        await saveActiveFileEditor(document);
+      } else {
+        console.error("Failed to apply edits for:", document.fileName);
+      }
     }
 
-    console.log("run actions for all files in src fn completed");
+    console.log("Run actions for all files in src function completed");
   }
 
   async function revertActionsForAllFilesInSrc() {
+    let lineIdentifier = context.globalState.get<string>(
+      "lineIdentifier",
+      "Line_Identifier"
+    );
+    if (lineIdentifier.trim() === "") {
+      lineIdentifier = "LineNumber";
+    }
     function saveActiveFileEditor(document: vscode.TextDocument) {
       const activeEditor = document;
 
@@ -284,7 +236,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
     console.log("revert actions for all files fn called");
 
-    if (!lineIdentifer) {
+    if (!lineIdentifier) {
       vscode.window.showInformationMessage("No line identifier provided");
       return;
     }
@@ -342,7 +294,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Remove the attribute using a regex that matches your specific attribute pattern
         const updatedTagText = tagText.replace(
-          new RegExp(`\\s${lineIdentifer}=".*?"`, "g"), // Adjust this if the attributes differ
+          new RegExp(`\\s${lineIdentifier}=".*?"`, "g"), // Adjust this if the attributes differ
           "" // This will remove the attribute and its value
         );
 
@@ -372,11 +324,18 @@ export function activate(context: vscode.ExtensionContext) {
     console.log("Revert actions for all files in src completed");
   }
 
-
-  function runActions() {
+  async function runActions() {
+    let lineIdentifier = context.globalState.get<string>(
+      "lineIdentifier",
+      "Line_Identifier"
+    );
+    if (lineIdentifier.trim() === "") {
+      lineIdentifier = "LineNumber";
+    }
+    await revertActions();
     console.log("run actions fn called");
 
-    if (lineIdentifer) {
+    if (lineIdentifier) {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         vscode.window.showInformationMessage("No active editor found");
@@ -392,7 +351,7 @@ export function activate(context: vscode.ExtensionContext) {
         const tagIndex = match.index;
         const line = document.positionAt(tagIndex).line + 1;
         // Add the attribute with line identifier and file path
-        const attribute = ` ${lineIdentifer}="${line} Path=${getActiveFileName(
+        const attribute = ` ${lineIdentifier}="${line} Filepath=${getActiveFileName(
           "base"
         )}"`;
         const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and a space
@@ -414,9 +373,16 @@ export function activate(context: vscode.ExtensionContext) {
     console.log("run actions fn compleeted");
   }
 
-  function revertActions() {
+  async function revertActions() {
+    let lineIdentifier = context.globalState.get<string>(
+      "lineIdentifier",
+      "Line_Identifier"
+    );
+    if (lineIdentifier.trim() === "") {
+      lineIdentifier = "LineNumber";
+    }
     console.log("revert actions fn called");
-    if (lineIdentifer) {
+    if (lineIdentifier) {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         vscode.window.showInformationMessage("No active editor found");
@@ -425,43 +391,36 @@ export function activate(context: vscode.ExtensionContext) {
       const document = editor.document;
       const text = document.getText();
       const htmlRegex = /<(\w+)(\s[^>]*?)?(\/?)>/g;
-      let edits: vscode.TextEdit[] = [];
+      let edits = [];
 
-      let match: RegExpExecArray | null;
+      let match;
       while ((match = htmlRegex.exec(text))) {
         const tagIndex = match.index;
-        const line = document.positionAt(tagIndex).line + 1;
-        // Add the attribute with line identifier and file path
-        const attribute = ` ${lineIdentifer}="${line} Path=${getActiveFileName(
-          "base"
-        )}"`;
-        const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and a space
-        const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
-
-        // "Revert mode" logic to remove the attribute
         const tagText = match[0];
-        // Updated regex to handle lineIdentifer with additional characters or text
         const updatedTagText = tagText.replace(
-          new RegExp(`\\s${lineIdentifer}=".*?"`, "g"),
-          "" // This will remove the attribute and its value
+          new RegExp(`\\s${lineIdentifier}=".*?"`, "g"),
+          ""
         );
-
-        // Replace the entire tag with the updated one
         const range = new vscode.Range(
-          document.positionAt(match.index),
-          document.positionAt(match.index + tagText.length)
+          document.positionAt(tagIndex),
+          document.positionAt(tagIndex + tagText.length)
         );
         edits.push(vscode.TextEdit.replace(range, updatedTagText));
       }
 
-      // Apply the text edits to the document
-      editor.edit((editBuilder) => {
+      // Apply edits and handle success/failure
+      const success = await editor.edit((editBuilder) => {
         edits.forEach((edit) => {
           editBuilder.replace(edit.range, edit.newText);
         });
       });
+
+      if (!success) {
+        console.error("Failed to apply edits in revertActions");
+        return; // If edits fail, stop further execution
+      }
     }
-    console.log("revert actions fn call comp;ete");
+    console.log("revert actions fn call complete");
   }
 
   function getActiveFileName(type = "relative"): string {
@@ -478,18 +437,17 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  // main
   const disposable = vscode.commands.registerCommand(
     "uispyidentifier.addDynamicAttributes",
     async () => {
       if (storedLisenceKey) {
         const options = [
-          "Open website | Send Feedback | Help",
-          "Run Actions for current file",
-          "Revert Actions for current file",
-          "Run Actions for all files",
-          "Revert Actions for all files",
+          "Run Actions For Current File",
+          "Revert Actions For Current File",
+          "Run Actions For All Files",
+          "Revert Actions For All Files",
           "Change Line Identifier",
-          "Meta Data",
           "Sign out",
         ];
 
@@ -497,15 +455,7 @@ export function activate(context: vscode.ExtensionContext) {
           .showQuickPick(options, { placeHolder: "Choose an option" })
           .then((selectedOption) => {
             switch (selectedOption) {
-              case "Open website | Send Feedback | Help":
-                vscode.window.showInformationMessage("Help is on the way!");
-
-                vscode.env.openExternal(
-                  vscode.Uri.parse("https://www.w3schools.com/")
-                );
-                break;
-
-              case "Run Actions for current file":
+              case "Run Actions For Current File":
                 vscode.window.showInformationMessage(
                   "Running Actions for current file"
                 );
@@ -513,7 +463,7 @@ export function activate(context: vscode.ExtensionContext) {
                 saveActiveEditor();
                 break;
 
-              case "Revert Actions for current file":
+              case "Revert Actions For Current File":
                 vscode.window.showInformationMessage(
                   "Reverting Actions for current file"
                 );
@@ -529,7 +479,7 @@ export function activate(context: vscode.ExtensionContext) {
                 });
                 break;
 
-              case "Run Actions for all files":
+              case "Run Actions For All Files":
                 vscode.window.showInformationMessage(
                   "Running extension actions..."
                 );
@@ -539,7 +489,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // Add your logic for extension actions here
                 break;
 
-              case "Revert Actions for all files":
+              case "Revert Actions For All Files":
                 vscode.window.showInformationMessage(
                   "Reverting extension actions..."
                 );
@@ -548,53 +498,9 @@ export function activate(context: vscode.ExtensionContext) {
                 revertActionsForAllFilesInSrc();
                 break;
 
-              case "Meta Data":
-                vscode.window
-                  .showInputBox({
-                    placeHolder: "Enter metadata key",
-                    prompt: "Please provide the metadata key",
-                    validateInput: (value: string) => {
-                      return value ? null : "Metadata key cannot be empty";
-                    },
-                    password: false,
-                    value: "",
-                    ignoreFocusOut: true,
-                  })
-                  .then((firstInput) => {
-                    if (firstInput) {
-                      // Show the second input box for metadata value
-                      vscode.window
-                        .showInputBox({
-                          placeHolder: "Enter metadata value",
-                          prompt: "Please provide the metadata value",
-                          validateInput: (value: string) => {
-                            return value
-                              ? null
-                              : "Metadata value cannot be empty";
-                          },
-                        })
-                        .then((secondInput) => {
-                          if (secondInput) {
-                            vscode.window.showInformationMessage(
-                              `You entered MetaData Key: ${firstInput} and MetaData Value: ${secondInput}`
-                            );
-                          } else {
-                            vscode.window.showInformationMessage(
-                              "Metadata value input was cancelled or invalid"
-                            );
-                          }
-                        });
-                    } else {
-                      vscode.window.showInformationMessage(
-                        "Metadata key input was cancelled or invalid"
-                      );
-                    }
-                  });
-                break;
-
               case "Change Line Identifier":
                 vscode.window.showInputBox({
-                  placeHolder: `Please provide your new line identifier this will replace the default identifer(${lineIdentifer})`,
+                  placeHolder: `Please provide your new line identifier this will replace the default identifer(${lineIdentifier})`,
                   prompt: "Enter The New Line Identifier Key",
                   validateInput: (value: string) => {
                     console.log("value in change line identifier : ", value);
