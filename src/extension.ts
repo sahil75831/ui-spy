@@ -104,7 +104,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     try {
-      // await revertActionsForAllFilesInSrc();
+      await revertActionsForAllFilesInSrc();
 
       // Ensure we have a workspace folder
       const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -370,6 +370,8 @@ export function activate(context: vscode.ExtensionContext) {
         "lineIdentifier",
         "LineNumber"
       );
+
+      await revertActions();
 
       // Fallback to default if the identifier is empty
       if (!lineIdentifier || lineIdentifier.trim() === "") {
@@ -872,7 +874,7 @@ export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand(
     "uispyidentifier.addDynamicAttributes",
     async () => {
-      if (context.globalState.get<string>("lisenceKey", "")) {
+      if (true || context.globalState.get<string>("lisenceKey", "")) {
         const options = [
           "Run Actions For Current File",
           "Revert Actions For Current File",
