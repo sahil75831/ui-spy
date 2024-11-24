@@ -552,144 +552,146 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   function aboutDeveloper() {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Software Developer Profile</title>
-  <style>
-    body {
-      font-family: cursive;
-      margin: 0;
-      padding: 0;
-      background: #FFFFFF;
-      color: #333;
-      line-height: 1.6;
-      font-size:1rem;
-    }
-    header {
-      background: #282828;
-      color: white;
-      text-align: center;
-      padding: 20px 10px;
-    }
-    header img {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      border: 5px solid #ffffff;
-      margin-top: 10px;
-    }
-    header h1 {
-      font-size: 2.5rem;
-      margin: 10px 0 5px;
-    }
-    header p {
-      font-size: 1.2rem;
-      margin: 0;
-    }
-    .container {
-      max-width: 900px;
-      margin: 30px auto;
-      padding: 20px;
-    }
-    section {
-      margin-bottom: 40px;
-    }
-    h2 {
-      font-size: 1.8rem;
-      color: #0077cc;
-      margin-bottom: 15px;
-      border-bottom: 2px solid #0077cc;
-      display: inline-block;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    ul li {
-      margin: 10px 0;
-      font-size: 1rem;
-    }
-    ul li span {
-      font-weight: bold;
-      color: #0077cc;
-    }
-    footer {
-      background: #282828;
-      color: white;
-      text-align: center;
-      padding: 20px 10px;
-      margin-top: 20px;
-    }
-    footer a {
-      color: #ffe082;
-      text-decoration: none;
-    }
-    footer a:hover {
-      text-decoration: underline;
-    }
-    @media (max-width: 768px) {
-      header h1 {
-        font-size: 2rem;
-      }
-      header p {
-        font-size: 1rem;
-      }
-      ul li {
-        font-size: 0.9rem;
-      }
-    }
-  </style>
-</head>
-<body>
+    const profile = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Sahil Sharma - Full Stack Developer</title>
+      <style>
+        body {
+          font-family: 'Arial', sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #1E1E1E;
+          color: #fff;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+        }
+    
+        .container {
+          display: flex;
+          align-items: center; /* Vertically align the image and content */
+          justify-content: center;
+          max-width: 1200px;
+          padding: 20px;
+          gap: 4rem;
+        }
+    
+        .profile-image {
+          border-radius: 50%; /* Circular image */
+          width: 300px;
+          height: 300px;
+          object-fit: cover;
+          border: 4px solid #FF69B4;
+        }
+    
+        .content {
+          flex: 1;
+        }
+    
+        h1 {
+          font-size: 2.5rem;
+          color: #FF69B4;
+          margin-bottom: 10px;
+        }
+    
+        h2 {
+          font-size: 1.8rem;
+          color: #FF69B4;
+          margin-bottom: 15px;
+        }
+    
+        p {
+          font-size: 1rem;
+          color: #ccc;
+          margin-bottom: 20px;
+        }
+    
+        ul {
+          font-size: 1rem;
+          list-style: none;
+          padding: 0;
+        }
+    
+        ul li {
+          margin-bottom: 10px;
+          color: #ddd;
+        }
+    
+        a {
+          text-decoration: none;
+          color: #FF69B4;
+          font-size: 1.2rem;
+        }
+    
+        a:hover {
+          color: #fff;
+        }
+    
+        footer {
+          margin-top: 20px;
+        }
+    
+        .social-links {
+          display: flex;
+          gap: 15px; /* Spacing between icons */
+          margin-top: 20px;
+        }
+    
+        .social-links a {
+          display: flex;
+          align-items: center;
+          text-decoration: none;
+          color: #FF69B4;
+          font-size: 1.2rem;
+          border: 2px solid transparent;
+          padding: 5px 10px;
+          border-radius: 5px;
+          transition: border-color 0.3s ease, color 0.3s ease;
+        }
+    
+        .social-links a:hover {
+          border-color: #FF69B4;
+          color: #fff;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <img src="https://avatars.githubusercontent.com/u/138021929?s=400&u=a7be0fb061c6a3f1b791f63d3155f5412068d36b&v=4" alt="Sahil Sharma" class="profile-image">
+        <div class="content">
+          <h1>Sahil Sharma</h1>
+          <p>
+            I’m a passionate Full Stack Developer with over 3 years of experience in building robust, scalable, and user-friendly web applications. With expertise in both front-end and back-end technologies, I strive to create impactful digital solutions tailored to client needs.
+          </p>
+          <h2>About Me</h2>
+          <p>
+            I specialize in web automation, scalable architecture, and seamless user experiences. My work philosophy revolves around delivering clean, maintainable code and leveraging the latest tools to optimize development workflows.
+          </p>
+          <h2>Tech Skills</h2>
+          <ul>
+            <li><strong>Programming Languages:</strong> JavaScript, Python, Kotlin, HTML, CSS, SASS, Tailwind</li>
+            <li><strong>Frameworks and Libraries:</strong> Next.js, ReactJS, ExpressJS, NodeJS, Shadcn UI, Mantine UI</li>
+            <li><strong>Development Tools:</strong> Docker, Postman API, Mongoose, Prisma, Git, GitHub, Playwright, BeautifulSoup</li>
+            <li><strong>Databases:</strong> MongoDB, PostgreSQL</li>
+            <li><strong>Other Skills:</strong> Chrome Extension Development, Web Automation, Web Scraping</li>
+          </ul>
+          <h2>Connect with Me</h2>
+          <div class="social-links">
+            <a href="https://www.github.com/sahil75831" target="_blank">GitHub</a>
+            <a href="https://www.linkedin.com/in/sahil-sharma-ss9043283" target="_blank">LinkedIn</a>
+            <a href="https://medium.com/@sahilsharma_SoftwareDeveloper" target="_blank">Medium</a>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
 
-<header>
-  <img src="https://via.placeholder.com/120" alt="Profile Picture">
-  <h1>Sahil Sharma</h1>
-  <p>Full-Stack Software Developer</p>
-</header>
-
-<div class="container">
-  <section>
-    <h2>About Me</h2>
-    <p>
-      I am a passionate software developer with expertise in full-stack development, specializing in JavaScript, Python, and modern frameworks. I thrive on solving problems, creating efficient solutions, and building scalable applications.
-    </p>
-  </section>
-
-  <section>
-    <h2>Skills</h2>
-    <ul>
-      <li><span>Programming Languages:</span> JavaScript, Python, HTML, CSS, SASS, Tailwind</li>
-      <li><span>Frameworks & Libraries:</span> Next.js, React.js, Node.js, Express.js, Shadcn UI, Mantine UI</li>
-      <li><span>Development Tools:</span> Docker, Postman, Mongoose, Prisma, Git, GitHub, Playwright, BeautifulSoup</li>
-      <li><span>Databases:</span> MongoDB</li>
-      <li><span>Other Skills:</span> Chrome Extension Development, Web Automation, Web Scraping</li>
-    </ul>
-  </section>
-
-  <section>
-    <h2>Contact</h2>
-    <ul>
-      <li><span>Email:</span> <a href="mailto:sahilsharma88765@gmail.com">sahilsharma88765@gmail.com</a></li>
-      <li><span>Phone:</span> <a href="tel:+9999026845">9999026845</a></li>
-      <li><span>GitHub:</span> <a href="https://github.com/sahil75831" target="_blank">github.com/sahil75831</a></li>
-      <li><span>LinkedIn:</span> <a href="https://linkedin.com/in/sahil-sharma-ss9043283" target="_blank">linkedin.com/in/sahil-sharma-ss9043283</a></li>
-      <li><span>Medium:</span> <a href="https://medium.com/@sahilsharma_SoftwareDeveloper" target="_blank">medium.com/@sahilsharma_SoftwareDeveloper</a></li>
-    </ul>
-  </section>
-</div>
-
-<footer>
-  <p>&copy; 2024 Sahil Sharma | <a href="mailto:sahilsharma88765@gmail.com">Contact Me</a></p>
-</footer>
-
-</body>
-</html>
-
-`;
+    return profile;
   }
 
   function aboutExtension() {
