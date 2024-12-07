@@ -2,9 +2,10 @@
 import * as vscode from "vscode";
 import * as path from "path";
 
+const extensionName = "SyncLine";
 export function activate(context: vscode.ExtensionContext) {
   console.log(
-    'Congratulations, your extension "uispyidentifier" is now active!'
+    `Congratulations, your extension ${extensionName} is now active !`
   );
 
   // Get runCount from globalState
@@ -21,11 +22,11 @@ export function activate(context: vscode.ExtensionContext) {
     100
   );
 
-  vscode.window.showInformationMessage("Hello World from uispy!");
+  vscode.window.showInformationMessage(`Hello World from ${extensionName}!`);
 
-  statusBarButton.text = `$(rocket) $(zap) Runs: ${runCount}  Line identifier`;
-  statusBarButton.tooltip = "Click to Add or Remove Line Identifier";
-  statusBarButton.command = "uispyidentifier.addDynamicAttributes";
+  statusBarButton.text = `$(rocket) $(debug-disconnect) ${extensionName}`;
+  statusBarButton.tooltip = "Click to Run the Extension";
+  statusBarButton.command = "syncLine.addDynamicAttributes";
   statusBarButton.show();
 
   statusBarButton.backgroundColor = new vscode.ThemeColor("statusBarItem.");
@@ -67,12 +68,12 @@ export function activate(context: vscode.ExtensionContext) {
 
       // Check if the sanitized identifier is empty
       if (sanitizedIdentifier.trim() === "") {
-        context.globalState.update("lineIdentifier", "LineNumber");
+        context.globalState.update("lineIdentifier", "data-LineNumber");
         return null;
       }
 
       // Update lineIdentifier with sanitized identifier
-      lineIdentifier = sanitizedIdentifier;
+      lineIdentifier = `data-${sanitizedIdentifier}`;
 
       // Update the global state with the new identifier
       context.globalState.update("lineIdentifier", lineIdentifier);
@@ -94,14 +95,188 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  // async function runActionsForAllFilesInSrc() {
+  //   let lineIdentifier = context.globalState.get<string>(
+  //     "lineIdentifier",
+  //     "data-LineNumber"
+  //   );
+  //   if (lineIdentifier.trim() === "") {
+  //     lineIdentifier = "data--LineNumber";
+  //   }
+
+  //   try {
+  //     await revertActionsForAllFilesInSrc();
+
+  //     // Ensure we have a workspace folder
+  //     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  //     if (!workspaceFolder) {
+  //       vscode.window.showInformationMessage("No workspace folder found.");
+  //       return;
+  //     }
+
+  //     // Construct the absolute path to the src directory within the workspace
+  //     const srcDir = path.join(workspaceFolder.uri.fsPath, "src");
+  //     const srcUri = vscode.Uri.file(srcDir);
+
+  //     // Ensure the directory exists
+  //     try {
+  //       const srcStat = await vscode.workspace.fs.stat(srcUri);
+  //       if (srcStat.type !== vscode.FileType.Directory) {
+  //         vscode.window.showInformationMessage("src is not a directory.");
+  //         return;
+  //       }
+  //     } catch (err) {
+  //       vscode.window.showErrorMessage(
+  //         "Failed to check the src directory. Please ensure it exists."
+  //       );
+  //       console.error("Error checking src directory:", err);
+  //       return;
+  //     }
+
+  //     // Find all files in the src directory (excluding node_modules)
+  //     let files: vscode.Uri[];
+  //     try {
+  //       files = await vscode.workspace.findFiles(
+  //         "src/**/*",
+  //         "**/node_modules/**"
+  //       );
+  //     } catch (err) {
+  //       vscode.window.showErrorMessage(
+  //         "Error finding files in the src directory."
+  //       );
+  //       console.error("Error finding files:", err);
+  //       return;
+  //     }
+
+  //     if (files.length === 0) {
+  //       vscode.window.showInformationMessage(
+  //         "No files found in the src directory."
+  //       );
+  //       return;
+  //     }
+
+  //     // Process each file
+  //     for (const file of files) {
+  //       let document: vscode.TextDocument;
+  //       try {
+  //         document = await vscode.workspace.openTextDocument(file);
+  //       } catch (err) {
+  //         vscode.window.showErrorMessage(`Failed to open file: ${file.fsPath}`);
+  //         console.error(`Error opening file ${file.fsPath}:`, err);
+  //         continue; // Skip to the next file
+  //       }
+
+  //       const text = document.getText();
+  //       const htmlRegex = /<([a-z][\w\-]*)(\s[^>]*)?(\/?)>/g;
+
+  //       let edits: vscode.TextEdit[] = [];
+  //       let match: RegExpExecArray | null;
+
+  //       while ((match = htmlRegex.exec(text))) {
+  //         console.log("match: ", match);
+  //         const tagIndex = match.index;
+  //         const line = document.positionAt(tagIndex).line + 1;
+
+  //         // Check if the attribute already exists in the tag
+  //         const existingAttributeRegex = new RegExp(
+  //           `\\s${lineIdentifier}=".*?"`,
+  //           "g"
+  //         );
+  //         if (existingAttributeRegex.test(match[0])) {
+  //           // If the attribute is already present, skip adding it again
+  //           continue;
+  //         }
+
+  //         // Construct the new attribute
+  //         const attribute = ` ${lineIdentifier}="${line} Filepath=${path.basename(
+  //           document.fileName
+  //         )}"`;
+  //         const insertPositionIndex = tagIndex + match[1].length + 1;
+  //         const insertPosition = document.positionAt(insertPositionIndex);
+
+  //         // Add edit to insert the new attribute
+  //         edits.push(vscode.TextEdit.insert(insertPosition, attribute));
+  //       }
+
+  //       // Apply the edits if any are found
+  //       if (edits.length > 0) {
+  //         let editor: vscode.TextEditor;
+  //         try {
+  //           editor = await vscode.window.showTextDocument(document, {
+  //             preview: false,
+  //           });
+  //         } catch (err) {
+  //           vscode.window.showErrorMessage(
+  //             `Failed to show text document for file: ${file.fsPath}`
+  //           );
+  //           console.error(`Error opening editor for file ${file.fsPath}:`, err);
+  //           continue; // Skip to the next file
+  //         }
+
+  //         let success: boolean;
+  //         try {
+  //           success = await editor.edit((editBuilder) => {
+  //             edits.forEach((edit) => {
+  //               editBuilder.insert(edit.range.start, edit.newText);
+  //             });
+  //           });
+  //         } catch (err) {
+  //           vscode.window.showErrorMessage(
+  //             `Error applying edits to file: ${file.fsPath}`
+  //           );
+  //           console.error(`Error applying edits for file ${file.fsPath}:`, err);
+  //           continue; // Skip to the next file
+  //         }
+
+  //         if (success) {
+  //           try {
+  //             await document.save();
+  //             console.log(`File ${document.fileName} saved successfully.`);
+  //           } catch (err) {
+  //             vscode.window.showErrorMessage(
+  //               `Failed to save file: ${file.fsPath}`
+  //             );
+  //             console.error(`Error saving file ${file.fsPath}:`, err);
+  //           }
+  //         } else {
+  //           console.error(`Failed to apply edits for: ${file.fsPath}`);
+  //         }
+  //       }
+  //     }
+
+  //     console.log("Run actions for all files in src function completed.");
+  //   } catch (err) {
+  //     vscode.window.showErrorMessage(
+  //       "An unexpected error occurred during the process."
+  //     );
+  //     console.error("Unexpected error:", err);
+  //   }
+  // }
+
   async function runActionsForAllFilesInSrc() {
     let lineIdentifier = context.globalState.get<string>(
       "lineIdentifier",
-      "LineNumber"
+      "data-LineNumber"
     );
     if (lineIdentifier.trim() === "") {
-      lineIdentifier = "LineNumber";
+      lineIdentifier = "data--LineNumber";
     }
+
+    const skipTags: string[] = [
+      "string",
+      "number",
+      "boolean",
+      "bigint",
+      "symbol",
+      "undefined",
+      "null",
+      "object",
+      "any",
+      "unknown",
+      "void",
+      "never",
+      "svg",
+    ];
 
     try {
       await revertActionsForAllFilesInSrc();
@@ -166,13 +341,20 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const text = document.getText();
+        // const htmlRegex = /<([a-z][\w\-]*)(\s[^>]*)?(\/?)>/g;
         const htmlRegex = /<([a-z][\w\-]*)(\s[^>]*)?(\/?)>/g;
 
         let edits: vscode.TextEdit[] = [];
         let match: RegExpExecArray | null;
 
         while ((match = htmlRegex.exec(text))) {
-          console.log("match: ", match);
+          const tagName = match[1]; // Extract the tag name
+
+          // Skip tags if the name is in the skipTags list
+          if (skipTags.includes(tagName)) {
+            continue;
+          }
+
           const tagIndex = match.index;
           const line = document.positionAt(tagIndex).line + 1;
 
@@ -255,10 +437,10 @@ export function activate(context: vscode.ExtensionContext) {
   async function revertActionsForAllFilesInSrc() {
     let lineIdentifier = context.globalState.get<string>(
       "lineIdentifier",
-      "LineNumber"
+      "data-LineNumber"
     );
     if (lineIdentifier.trim() === "") {
-      lineIdentifier = "LineNumber";
+      lineIdentifier = "data-LineNumber";
     }
 
     if (!lineIdentifier) {
@@ -364,18 +546,125 @@ export function activate(context: vscode.ExtensionContext) {
     console.log("Revert actions for all files in src completed");
   }
 
+  // async function runActions() {
+  //   try {
+  //     let lineIdentifier = context.globalState.get<string>(
+  //       "lineIdentifier",
+  //       "LineNumber"
+  //     );
+
+  //     await revertActions();
+
+  //     // Fallback to default if the identifier is empty
+  //     if (!lineIdentifier || lineIdentifier.trim() === "") {
+  //       lineIdentifier = "LineNumber";
+  //     }
+
+  //     const editor = vscode.window.activeTextEditor;
+
+  //     // Check if an editor is open
+  //     if (!editor) {
+  //       vscode.window.showInformationMessage(
+  //         "No editor open. Please open a file to proceed."
+  //       );
+  //       return;
+  //     }
+
+  //     const document = editor.document;
+  //     const text = document.getText();
+  //     const htmlRegex = /<([a-z][\w\-]*)(\s[^>]*)?(\/?)>/g;
+
+  //     let edits: vscode.TextEdit[] = [];
+  //     let match: RegExpExecArray | null;
+
+  //     while ((match = htmlRegex.exec(text))) {
+  //       try {
+  //         const tagIndex = match.index;
+  //         const line = document.positionAt(tagIndex).line + 1;
+
+  //         // Generate the attribute string
+  //         const attribute = ` ${lineIdentifier}="${line} Filepath=${getActiveFileName(
+  //           "base"
+  //         )}"`;
+
+  //         // Check if the attribute already exists in the tag
+  //         const existingAttributeRegex = new RegExp(
+  //           `\\s${lineIdentifier}=".*?"`,
+  //           "g"
+  //         );
+  //         if (existingAttributeRegex.test(match[0])) {
+  //           // If the attribute already exists, skip adding it again
+  //           continue;
+  //         }
+
+  //         const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and a space
+  //         const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
+
+  //         // Prepare text edits
+  //         edits.push(vscode.TextEdit.insert(insertPosition, attribute));
+  //       } catch (innerError) {
+  //         console.error("Error processing tag:", innerError);
+  //         vscode.window.showErrorMessage(
+  //           "An error occurred while processing a tag."
+  //         );
+  //       }
+  //     }
+
+  //     // Apply the text edits to the document
+  //     const success = await editor.edit((editBuilder) => {
+  //       edits.forEach((edit) => {
+  //         editBuilder.insert(edit.range.start, edit.newText);
+  //       });
+  //     });
+
+  //     // Handle edit success or failure
+  //     if (success) {
+  //       runCount += 1;
+  //       context.globalState.update("runCount", runCount);
+  //       vscode.window.showInformationMessage("Action completed successfully.");
+  //     } else {
+  //       vscode.window.showErrorMessage(
+  //         "Failed to apply edits to the document."
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error("An unexpected error occurred:", error);
+  //     vscode.window.showErrorMessage(
+  //       "An unexpected error occurred while running actions."
+  //     );
+  //   }
+  // }
+  // console.log("date dec 12");
+
   async function runActions() {
+    // Tags to skip
+    const skipTags: string[] = [
+      "string",
+      "number",
+      "boolean",
+      "bigint",
+      "symbol",
+      "undefined",
+      "null",
+      "object",
+      "any",
+      "unknown",
+      "void",
+      "never",
+      "svg",
+    ];
+
     try {
       let lineIdentifier = context.globalState.get<string>(
         "lineIdentifier",
-        "LineNumber"
+        "data-LineNumber"
       );
 
       await revertActions();
 
       // Fallback to default if the identifier is empty
       if (!lineIdentifier || lineIdentifier.trim() === "") {
-        lineIdentifier = "LineNumber";
+        lineIdentifier = "data-LineNumber";
       }
 
       const editor = vscode.window.activeTextEditor;
@@ -390,6 +679,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       const document = editor.document;
       const text = document.getText();
+      // const htmlRegex = /<([a-z][\w\-]*)(\s[^>]*)?(\/?)>/g;
       const htmlRegex = /<([a-z][\w\-]*)(\s[^>]*)?(\/?)>/g;
 
       let edits: vscode.TextEdit[] = [];
@@ -397,6 +687,13 @@ export function activate(context: vscode.ExtensionContext) {
 
       while ((match = htmlRegex.exec(text))) {
         try {
+          const tagName = match[1]; // Extract the tag name
+
+          // Skip tags if the name is in the skipTags list
+          if (skipTags.includes(tagName)) {
+            continue;
+          }
+
           const tagIndex = match.index;
           const line = document.positionAt(tagIndex).line + 1;
 
@@ -453,16 +750,100 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  // console.log("date dec 12");
+  // async function runActions() {
+  //   try {
+  //     let lineIdentifier = context.globalState.get<string>("lineIdentifier", "LineNumber");
+
+  //     await revertActions();
+
+  //     // Fallback to default if the identifier is empty
+  //     if (!lineIdentifier || lineIdentifier.trim() === "") {
+  //       lineIdentifier = "LineNumber";
+  //     }
+
+  //     const editor = vscode.window.activeTextEditor;
+
+  //     // Check if an editor is open
+  //     if (!editor) {
+  //       vscode.window.showInformationMessage(
+  //         "No editor open. Please open a file to proceed."
+  //       );
+  //       return;
+  //     }
+
+  //     const document = editor.document;
+  //     const text = document.getText();
+  //     const htmlRegex = /<([a-z][\w\-])(\s[^>])?(\/?)>/g;
+
+  //     let edits: vscode.TextEdit[] = [];
+  //     let match: RegExpExecArray | null;
+
+  //     while ((match = htmlRegex.exec(text))) {
+  //       try {
+  //         const tagIndex = match.index;
+  //         const line = document.positionAt(tagIndex).line + 1;
+
+  //         // Generate the attribute string
+  //         const attribute = `${lineIdentifier}="${line} Filepath=${getActiveFileName("base")}"`;
+
+  //         // Check if the attribute already exists in the tag
+  //         const existingAttributeRegex = new RegExp(
+  //           `\\s${lineIdentifier}=".*?"`, "g"
+  //         );
+  //         if (existingAttributeRegex.test(match[0])) {
+  //           // If the attribute already exists, skip adding it again
+  //           continue;
+  //         }
+
+  //         const insertPositionIndex = tagIndex + match[1].length + 1; // Position after <tagName and a space
+  //         const insertPosition = document.positionAt(insertPositionIndex); // Convert index to Position object
+
+  //         // Prepare text edits
+  //         edits.push(vscode.TextEdit.insert(insertPosition, attribute));
+  //       } catch (innerError) {
+  //         console.error("Error processing tag:", innerError);
+  //         vscode.window.showErrorMessage(
+  //           "An error occurred while processing a tag."
+  //         );
+  //       }
+  //     }
+
+  //     // Apply the text edits to the document
+  //     const success = await editor.edit((editBuilder) => {
+  //       edits.forEach((edit) => {
+  //         editBuilder.insert(edit.range.start, edit.newText);
+  //       });
+  //     });
+
+  //     // Handle edit success or failure
+  //     if (success) {
+  //       runCount += 1;
+  //       context.globalState.update("runCount", runCount);
+  //       vscode.window.showInformationMessage("Action completed successfully.");
+  //     } else {
+  //       vscode.window.showErrorMessage(
+  //         "Failed to apply edits to the document."
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error("An unexpected error occurred:", error);
+  //     vscode.window.showErrorMessage(
+  //       "An unexpected error occurred while running actions."
+  //     );
+  //   }
+  // }
+
   async function revertActions() {
     try {
       let lineIdentifier = context.globalState.get<string>(
         "lineIdentifier",
-        "LineNumber"
+        "data-LineNumber"
       );
 
       // Handle empty lineIdentifier gracefully
       if (lineIdentifier.trim() === "") {
-        lineIdentifier = "LineNumber";
+        lineIdentifier = "data-LineNumber";
       }
 
       const editor = vscode.window.activeTextEditor;
@@ -553,328 +934,440 @@ export function activate(context: vscode.ExtensionContext) {
 
   function aboutDeveloper() {
     const profile = `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Sahil Sharma - Full Stack Developer</title>
-      <style>
-        body {
-          font-family: 'Arial', sans-serif;
-          margin: 0;
-          padding: 0;
-          background-color: #1E1E1E;
-          color: #fff;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-        }
-    
-        .container {
-          display: flex;
-          align-items: center; /* Vertically align the image and content */
-          justify-content: center;
-          max-width: 1200px;
-          padding: 20px;
-          gap: 4rem;
-        }
-    
-        .profile-image {
-          border-radius: 50%; /* Circular image */
-          width: 300px;
-          height: 300px;
-          object-fit: cover;
-          border: 4px solid #FF69B4;
-        }
-    
-        .content {
-          flex: 1;
-        }
-    
-        h1 {
-          font-size: 2.5rem;
-          color: #FF69B4;
-          margin-bottom: 10px;
-        }
-    
-        h2 {
-          font-size: 1.8rem;
-          color: #FF69B4;
-          margin-bottom: 15px;
-        }
-    
-        p {
-          font-size: 1rem;
-          color: #ccc;
-          margin-bottom: 20px;
-        }
-    
-        ul {
-          font-size: 1rem;
-          list-style: none;
-          padding: 0;
-        }
-    
-        ul li {
-          margin-bottom: 10px;
-          color: #ddd;
-        }
-    
-        a {
-          text-decoration: none;
-          color: #FF69B4;
-          font-size: 1.2rem;
-        }
-    
-        a:hover {
-          color: #fff;
-        }
-    
-        footer {
-          margin-top: 20px;
-        }
-    
-        .social-links {
-          display: flex;
-          gap: 15px; /* Spacing between icons */
-          margin-top: 20px;
-        }
-    
-        .social-links a {
-          display: flex;
-          align-items: center;
-          text-decoration: none;
-          color: #FF69B4;
-          font-size: 1.2rem;
-          border: 2px solid transparent;
-          padding: 5px 10px;
-          border-radius: 5px;
-          transition: border-color 0.3s ease, color 0.3s ease;
-        }
-    
-        .social-links a:hover {
-          border-color: #FF69B4;
-          color: #fff;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <img src="https://avatars.githubusercontent.com/u/138021929?s=400&u=a7be0fb061c6a3f1b791f63d3155f5412068d36b&v=4" alt="Sahil Sharma" class="profile-image">
-        <div class="content">
-          <h1>Sahil Sharma</h1>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+    </style>
+    <title>Sahil Sharma Resume</title>
+    <style>
+      body {
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        font-family: "Poppins", sans-serif;
+        font-weight: 500;
+        font-style: normal;
+        color:#000000;
+      }
+      .resume-container {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .header h1 {
+        font-size: 40px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        margin: 0;
+      }
+      .header .contact-info {
+        font-size: 14px;
+        line-height: 1.2;
+        color: #555;
+      }
+      .header .contact-info a {
+        color: #000;
+        text-decoration: none;
+      }
+      .header .contact-info a:hover {
+        text-decoration: underline;
+      }
+      h2 {
+        font-size: 20px;
+        margin-top: 30px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      .section p {
+        margin: 5px 0;
+        color: #333;
+      }
+      .section strong {
+        font-weight: bold;
+      }
+      ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      ul li {
+        margin-bottom: 5px;
+        color: #333;
+      }
+      .education p {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="resume-container">
+      <div class="header">
+        <h1>Sahil Sharma</h1>
+        <div class="contact-info">
+          <p>sahilsharma88765@gmail.com</p>
           <p>
-            I’m a passionate Full Stack Developer with over 3 years of experience in building robust, scalable, and user-friendly web applications. With expertise in both front-end and back-end technologies, I strive to create impactful digital solutions tailored to client needs.
+            <a href="https://github.com/sahil75831"
+              >www.github.com/sahil75831</a
+            >
           </p>
-          <h2>About Me</h2>
           <p>
-            I specialize in web automation, scalable architecture, and seamless user experiences. My work philosophy revolves around delivering clean, maintainable code and leveraging the latest tools to optimize development workflows.
+            <a href="https://www.linkedin.com/in/sahil-sharma-ss9043283"
+              >www.linkedin.com/in/sahil-sharma-ss9043283</a
+            >
           </p>
-          <h2>Tech Skills</h2>
-          <ul>
-            <li><strong>Programming Languages:</strong> JavaScript, Python, Kotlin, HTML, CSS, SASS, Tailwind</li>
-            <li><strong>Frameworks and Libraries:</strong> Next.js, ReactJS, ExpressJS, NodeJS, Shadcn UI, Mantine UI</li>
-            <li><strong>Development Tools:</strong> Docker, Postman API, Mongoose, Prisma, Git, GitHub, Playwright, BeautifulSoup</li>
-            <li><strong>Databases:</strong> MongoDB, PostgreSQL</li>
-            <li><strong>Other Skills:</strong> Chrome Extension Development, Web Automation, Web Scraping</li>
-          </ul>
-          <h2>Connect with Me</h2>
-          <div class="social-links">
-            <a href="https://www.github.com/sahil75831" target="_blank">GitHub</a>
-            <a href="https://www.linkedin.com/in/sahil-sharma-ss9043283" target="_blank">LinkedIn</a>
-            <a href="https://medium.com/@sahilsharma_SoftwareDeveloper" target="_blank">Medium</a>
-          </div>
+          <p>
+            <a href="https://medium.com/@sahilsharma_SoftwareDeveloper"
+              >https://medium.com/@sahilsharma_SoftwareDeveloper</a
+            >
+          </p>
         </div>
       </div>
-    </body>
-    </html>
+
+      <div class="section">
+        <h2>Professional Experience | 3 Years</h2>
+
+        <p>
+          <strong>Full Stack Developer | Current Role</strong>
+        </p>
+        <p>
+          Currently working as a Full Stack Developer, specializing in the
+          design, development, and optimization of both front-end and back-end
+          systems. I collaborate closely with product teams to create seamless,
+          scalable, and secure applications. My role involves integrating
+          various technologies to deliver high-performance solutions, while
+          ensuring that both the user experience and backend functionality align
+          with business requirements.
+        </p>
+        <br />
+
+        <p>
+          <strong>Software Developer | April 2024 - May 2024</strong>
+        </p>
+        <p>
+          Contributed to the successful delivery of multiple software
+          development projects, applying a blend of technical skills and
+          problem-solving expertise. Worked collaboratively with
+          cross-functional teams to analyze user requirements, design efficient
+          solutions, and implement them with a focus on quality and timeliness.
+        </p>
+        <br />
+
+        <p>
+          <strong>Software Engineer | August 2023 - April 2024</strong>
+        </p>
+        <p>
+          Played a critical role in the development, maintenance, and
+          enhancement of software systems. Partnered with team members across
+          different functions to ensure high-quality software delivery,
+          addressing complex technical issues, and ensuring seamless integration
+          and scalability of features.
+        </p>
+        <br />
+
+        <p>
+          <strong>Full Stack Developer | March 2021 - August 2023</strong>
+        </p>
+        <p>
+          Delivered comprehensive, end-to-end web solutions as a freelance Full
+          Stack Developer. My work included designing user-friendly front-end
+          interfaces while developing robust back-end functionality. Focused on
+          creating custom solutions that addressed client-specific needs,
+          improving both the user experience and business outcomes through
+          innovative web applications.
+        </p>
+        <br />
+      </div>
+
+      <div class="section">
+        <h2>Technical Skills</h2>
+
+        <p>
+          <strong>Programming Languages</strong>: JavaScript, TypeScript,
+          Kotlin, Python, HTML, CSS, SASS
+        </p>
+
+        <p>
+          <strong>Frameworks and Libraries</strong>: ReactJS, NextJS, ExpressJS,
+          NodeJS, Mantine UI
+        </p>
+
+        <p>
+          <strong>Development Tools</strong>: Docker, Postman, Prisma, Git,
+          Playwright
+        </p>
+
+        <p><strong>Databases</strong>: MongoDB, PostgreSQL, Mongoose</p>
+
+        <p>
+          <strong>Other Skills</strong>: Chrome Extension Development, Web
+          Automation
+        </p>
+      </div>
+
+      <div class="section">
+        <h2>Projects</h2>
+        <p><strong>Dynamic Document Automation Suite</strong></p>
+        <p>
+          Developed a sophisticated document automation platform tailored for
+          large-scale organizational needs. This application offers a seamless
+          interface for creating, customizing, and managing official documents
+          with advanced capabilities, including:
+        </p>
+        <ul>
+          <li>
+            Dynamic insertion of pre-designed templates, complete with tables,
+            logos, digital signatures, and special formatting elements.
+          </li>
+          <li>
+            Comprehensive text-editing features such as bold, italic,
+            strikethrough, and support for multi-page customizations with
+            adjustable paper sizes.
+          </li>
+          <li>
+            Effortless addition or deletion of pages, export to PDF
+            functionality, and precise alignment with organizational branding
+            guidelines.
+          </li>
+          <li>
+            Automated generation of bulk documents, such as salary slips or
+            offer letters, for thousands of employees—each dynamically
+            personalized with unique credentials.
+          </li>
+        </ul>
+        <p>
+          This platform revolutionized document workflows by significantly
+          reducing manual efforts while ensuring scalability and accuracy in
+          enterprise operations.
+        </p>
+        <br />
+        <p><strong>Marketplace Data Analytics Platform</strong></p>
+        <p>
+          Led the development of an advanced web application designed to
+          aggregate and analyze e-commerce marketplace data. Key features
+          include:
+        </p>
+        <ul>
+          <li>
+            A robust backend infrastructure built on Node.js and MongoDB,
+            leveraging Python for intricate data processing tasks.
+          </li>
+          <li>
+            Automated, brand-specific data extraction utilizing Playwright,
+            enhancing data acquisition speed and reliability.
+          </li>
+          <li>
+            Advanced analytical algorithms generating actionable insights,
+            including product content scoring, comprehensive sales analyses,
+            brand performance evaluation, competitive benchmarking, and
+            keyword-based rankings.
+          </li>
+          <li>
+            Scalable integration supporting thousands of API calls, with
+            insights visualized through interactive dashboards powered by
+            ApexCharts.
+          </li>
+        </ul>
+        <p>
+          Additionally, developed a Chrome extension to streamline influencer
+          marketing by extracting vital YouTube channel metrics such as
+          subscriber count, viewership, and content quality, empowering
+          data-driven decision-making and strategic planning.
+        </p>
+      </div>
+
+      <div class="section">
+        <h2>Education</h2>
+        <p>
+          <strong>Jamia Millia Islamia (New Delhi)</strong> | B.Tech ECE
+          (2015-2019) | CPI: 8.83/10
+        </p>
+        <p>
+          <strong>Modern Vidya Niketan Sr. Sec. School</strong> | Percentage
+          (12th): 86.40%
+        </p>
+        <p><strong>Gita Convent School</strong> | CGPA (Class 10): 9.2/10</p>
+      </div>
+    </div>
+  </body>
+</html>
+
     `;
 
     return profile;
   }
 
   function aboutExtension() {
-    const extensionDocumentation = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Extension Documentation</title>
-      <style>
-        body {
-          font-family: 'Dancing Script', cursive;
-          line-height: 1.8;
-          margin: 0;
-          padding: 0;
-          background-color: #FFFFFF;
-          color: #333;
-          font-size:1rem;
-        }
-        header {
-          background-color: #282828;
-          color: white;
-          padding: 30px;
-          text-align: center;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        header h1 {
-          margin: 0;
-          font-size: 3rem;
-        }
-        header p {
-          margin: 5px 0;
-          font-size: 1.2rem;
-        }
-        .container {
-          max-width: 1000px;
-          margin: 40px auto;
-          padding: 30px;
-          background: white;
-          border-radius: 0px;
-        }
-        section {
-          margin-bottom: 40px;
-        }
-        section h2 {
-          font-size: 2rem;
-          color: #0077cc;
-          border-bottom: 2px solid #0077cc;
-          display: inline-block;
-          margin-bottom: 20px;
-        }
-        section ul {
-          list-style: none;
-          padding: 0;
-        }
-        section ul li {
-          margin: 15px 0;
-          font-size: 1.1rem;
-        }
-        section ul li span {
-          font-weight: bold;
-          color: #0077cc;
-        }
-        footer {
-          text-align: center;
-          padding: 20px;
-          background-color: #282828;
-          color: white;
-          margin-top: 40px;
-        }
-        footer p {
-          margin: 0;
-          font-size: 1rem;
-        }
-        .note {
-          font-style: italic;
-          background-color: #f2f2f2;
-          padding: 10px;
-          border-radius: 8px;
-          margin-top: 15px;
-        }
-        .workflow {
-          background-color: #f9f9f9;
-          border-left: 5px solid #0077cc;
-          padding-left: 15px;
-          margin-top: 20px;
-        }
-        .workflow p {
-          font-size: 1.1rem;
-        }
-        .workflow ul {
-          padding-left: 20px;
-        }
-        .workflow li {
-          margin-bottom: 10px;
-        }
-      </style>
-    </head>
-    <body>
-    
-    <header>
-      <h1>Extension Documentation</h1>
-      <p>Step-by-Step Guide to Use the Extension</p>
-    </header>
-    
-    <div class="container">
-      <section>
-        <h2>Installation</h2>
-        <p>The Chrome Extension is mandatory for this tool to function correctly. Please install it first before proceeding with the usage instructions.</p>
-        <ul>
-          <li><span>Chrome Extension:</span>
-            <ul>
-              <li>Download the Chrome Extension folder from the repository.</li>
-              <li>Open Chrome and navigate to <code>chrome://extensions/</code>.</li>
-              <li>Enable <b>Developer Mode</b> (toggle in the top-right corner).</li>
-              <li>Click <b>Load unpacked</b> and select the extension folder.</li>
-            </ul>
-          </li>
-          <li><span>VS Code Extension:</span>
-            <ul>
-              <li>Download the VS Code Extension folder from the repository.</li>
-              <li>In VS Code, go to the <b>Extensions</b> panel (<code>Ctrl+Shift+X</code>).</li>
-              <li>Click the three-dot menu and select <b>Install from VSIX...</b>.</li>
-              <li>Select the downloaded folder to install.</li>
-            </ul>
-          </li>
-        </ul>
-      </section>
-    
-      <section>
+    const extensionDocumentation = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+    </style>
+    <title>SyncLine Chrome Extension</title>
+    <style>
+      body {
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        font-family: "Poppins", sans-serif;
+        font-weight: 500;
+        font-style: normal;
+        color:#000000;
+
+      }
+      .resume-container {
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .header h1 {
+        font-size: 40px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        margin: 0;
+      }
+      h2 {
+        font-size: 20px;
+        margin-top: 30px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      .section p {
+        margin: 5px 0;
+        color: #333;
+      }
+      .section strong {
+        font-weight: bold;
+      }
+      ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      ul li {
+        margin-bottom: 5px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="resume-container">
+      <div class="header">
+        <h1>SyncLine Chrome Extension</h1>
+      </div>
+
+      <div class="section">
+        <h2>Overview</h2>
+        <p>
+          SyncLine is a Chrome extension that works in tandem with a VS Code extension to synchronize the <strong>Line Identifier</strong> between both platforms. The Line Identifier is used to map UI elements on the web page to the corresponding code in a VS Code project. When hovering over a UI element in the Chrome browser, a tooltip displays the <strong>Line Identifier</strong> and <strong>file path</strong> of the associated code in VS Code.
+        </p>
+        <p>
+          If you change the Line Identifier in either the Chrome extension or the VS Code extension, it <strong>must be manually updated</strong> in the other; they will not automatically sync.
+        </p>
+      </div>
+
+      <div class="section">
         <h2>Features</h2>
         <ul>
-          <li><span>1. Run Actions for Current File:</span> Activates the extension only for the currently opened file. Hovering over any UI element will show its source file and line number.</li>
-          <li><span>2. Run Actions for All Files:</span> Activates the extension for all files in the \`src\` directory, allowing full project analysis.</li>
-          <li><span>3. Revert Actions for Current File:</span> Undo changes made by the extension only for the currently opened file.</li>
-          <li><span>4. Revert Actions for All Files:</span> Undo all actions made by the extension across the entire project.</li>
-          <li><span>5. Sign Out:</span> Sign out from the extension.</li>
-          <li><span>6. About Developer:</span> Displays information about the developer.</li>
+          <li>
+            <strong>Line Identifier Configuration:</strong>
+            <ul>
+              <li><strong>Chrome Extension:</strong> Users can set a custom Line Identifier via the settings page.</li>
+              <li><strong>VS Code Extension:</strong> Users can change the Line Identifier via a Quick Pick menu in VS Code.</li>
+              <li>Defaults to <strong>LineNumber</strong> if no custom identifier is provided.</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Tooltip on Hover:</strong>
+            The Chrome extension detects UI elements on the web page and shows a tooltip displaying the Line Identifier and the file path of the code in VS Code.
+          </li>
+          <li>
+            <strong>Manual Synchronization:</strong>
+            If you change the Line Identifier in one extension (VS Code or Chrome), you must manually update it in the other extension for the system to work properly.
+          </li>
         </ul>
-      </section>
-    
-      <section>
-        <h2>Usage</h2>
+      </div>
+
+      <div class="section">
+        <h2>Installation</h2>
+        <h3>1. Edge Extension</h3>
+        <ol>
+          <li>Go to the Microsoft Edge Add-ons website: <a href="https://microsoftedge.microsoft.com/addons/detail/cocdneokkbcdikodcoadhokiejfonjcp" target="_blank">Edge Extension</a>.</li>
+          <li>Search for the "SyncLine" extension.</li>
+          <li>Click on the extension to install from the search results. Then, click "Get" to add it to Edge.</li>
+          <li>A prompt will appear asking for permission to install the extension. Review the permissions and click "Add Extension" to confirm.</li>
+          <li>Once installation is complete, you will see the extension icon in the top-right corner of the browser (next to the address bar).</li>
+        </ol>
+        <p><strong>Note:</strong> A Chrome version of the extension will be available soon, so stay tuned for that update!</p>
+
+        <h3>2. VS Code Extension</h3>
+        <ol>
+          <li>Install the VS Code extension from the VS Code Marketplace.</li>
+          <li>Open VS Code, and the extension should automatically be added to your workspace.</li>
+        </ol>
+      </div>
+
+      <div class="section">
+        <h2>How to Use</h2>
+        <h3>Chrome/Edge Extension</h3>
         <ul>
-          <li><span>Run Actions for Current File:</span> Open the file in VS Code, click the option to activate, and then hover over UI elements in Chrome to reveal their corresponding source file and line number.</li>
-          <li><span>Run Actions for All Files:</span> Click this option to enable the feature for all files in the \`src\` directory.</li>
-          <li><span>Revert Actions for Current File:</span> Use this option to undo actions only for the file you're currently working on.</li>
-          <li><span>Revert Actions for All Files:</span> Use this option to revert changes made across the entire project.</li>
+          <li>Click on the SyncLine icon in the Chrome toolbar to open the popup.</li>
+          <li>Type your custom Line Identifier in the settings page (optional).</li>
+          <li>When hovering over any UI element in the browser, a tooltip will show the corresponding <strong>Line Identifier</strong> and <strong>file path</strong>.</li>
         </ul>
-      </section>
-    
-      <section class="note">
-        <h2>Note</h2>
-        <p>To achieve the best results, it is highly recommended to install both the Chrome Extension and the VS Code Extension. The Chrome Extension is necessary for the UI element identification, and the VS Code Extension ensures the functionality works seamlessly in the development environment.</p>
-      </section>
-    
-      <section class="workflow">
-        <h2>Workflow</h2>
-        <p>Here's how the workflow should look when using the extension:</p>
+
+        <h3>VS Code Extension</h3>
         <ul>
-          <li><b>Step 1:</b> Install both the Chrome Extension and the VS Code Extension.</li>
-          <li><b>Step 2:</b> Open your project in VS Code and select one of the actions (either for the current file or all files).</li>
-          <li><b>Step 3:</b> In Chrome, hover over any UI element. The source file and line number will be displayed.</li>
-          <li><b>Step 4:</b> If you wish to revert any action, use the relevant option to undo changes either for the current file or for the entire project.</li>
-          <li><b>Step 5:</b> After finishing your work, sign out from the extension.</li>
+          <li>Open the Command Palette (press Ctrl + Shift + P or Cmd + Shift + P).</li>
+          <li>Type the command <strong>SyncLine</strong> to synchronize the Line Identifier with the Chrome extension or run this extension.</li>
+          <li>Alternatively, you can click the <strong>SyncLine</strong> button in the VS Code status bar to run this extension.</li>
         </ul>
-      </section>
+      </div>
     </div>
-    
-    <footer>
-      <p>&copy; 2024 Sahil Sharma</p>
-    </footer>
-    
-    </body>
-    </html>
+  </body>
+</html>
+
+
     `;
 
     return extensionDocumentation;
   }
   // main
   const disposable = vscode.commands.registerCommand(
-    "uispyidentifier.addDynamicAttributes",
+    "syncLine.addDynamicAttributes", // Updated command name
     async () => {
       if (true || context.globalState.get<string>("lisenceKey", "")) {
         const options = [
@@ -883,14 +1376,15 @@ export function activate(context: vscode.ExtensionContext) {
           "Run Actions For All Files",
           "Revert Actions For All Files",
           "Change Line Identifier",
-          "Sign out",
+          "Copy lineIdentifier",
+          // "Sign out",
           "About Developer",
           "About Extension",
         ];
 
         vscode.window
           .showQuickPick(options, { placeHolder: "Choose an option" })
-          .then((selectedOption) => {
+          .then(async (selectedOption) => {
             switch (selectedOption) {
               case "Run Actions For Current File":
                 vscode.window.showInformationMessage(
@@ -963,12 +1457,33 @@ export function activate(context: vscode.ExtensionContext) {
                     } else {
                       context.globalState.update(
                         "lineIdentifier",
-                        "LineNumber"
+                        "data-LineNumber"
                       );
                     }
                   });
                 break;
 
+                case "Copy lineIdentifier":
+                  try {
+                    // Get the line identifier with a default value
+                    const lineIdentifier = context.globalState.get<string>(
+                      "lineIdentifier"
+                    ) || "data-LineNumber";
+                
+                    // Use VSCode's clipboard API to copy the text
+                    await vscode.env.clipboard.writeText(lineIdentifier);
+                
+                    // Display the success message
+                    vscode.window.showInformationMessage(
+                      `${lineIdentifier} has been copied to clipboard!`
+                    );
+                  } catch (error) {
+                    vscode.window.showErrorMessage(
+                      "Error copying the line identifier to clipboard."
+                    );
+                    console.error("Clipboard copy error: ", error);
+                  }
+                  break;
               case "About Developer":
                 const profilePanel = vscode.window.createWebviewPanel(
                   "aboutDeveloper", // Identifier for the webview
